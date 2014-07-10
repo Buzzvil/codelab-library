@@ -17,35 +17,36 @@ import java.util.concurrent.atomic.AtomicLong;
  * ThreadGuest.ChainBlocker blocker = new ThreadGuest.ChainBlocker();
  * blocker.block();
  * new ThreadGuest() {
- *     public void run(long waitTimeMillis) {
+ *     public Object run(long waitTimeMillis) {
  *         setObject(somethingGreat());
+ *         return null;
  *     }
- * }
- * .addChain(blocker, new ThreadGuest() {
- *     public void run(long waitTimeMillis) {
+ * }.addChain(blocker, new ThreadGuest() {
+ *     public Object run(long waitTimeMillis) {
  *         somethingAwesome();
+ *         return null;
  *     }
- * })
- * .addChain(200, new ThreadGuest() {
- *     public void run(long waitTimeMillis) {
+ * }).addChain(200, new ThreadGuest() {
+ *     public Object run(long waitTimeMillis) {
  *         somethingPerfect(getObject());
+ *         return null;
  *     }
  * }).execute();
  * somethingOther();
- * blocker.unblock();</pre>
+ * blocker.unblock()</pre>
  * <p/>
  * The methods will be executed in this order.<br/>
  * somethingOther()<br/>
- * somethingGreat()	// on ThreadHost.<br/>
- * somethingAwesome()	// on ThreadHost, after blocker.unblock().<br/>
- * somethingPerfect()	// on ThreadHost.<br/>
+ * somethingGreat()     // on ThreadHost.<br/>
+ * somethingAwesome()   // on ThreadHost, after blocker.unblock().<br/>
+ * somethingPerfect()   // on ThreadHost.<br/>
  * <br/>
  *
  * @author Arngard
  */
 public abstract class ThreadGuest implements Comparable<ThreadGuest> {
 
-	/* 이하 우선순위 수치는 MS 윈도우의 프로세스 우선순위 값을 참고함. 참고로 윈도우의 System idle 은 0이다. */
+    /* 이하 우선순위 수치는 MS 윈도우의 프로세스 우선순위 값을 참고함. 참고로 윈도우의 System idle 은 0이다. */
     /**
      * Preset of priority. Prior to all another.
      */
@@ -91,7 +92,7 @@ public abstract class ThreadGuest implements Comparable<ThreadGuest> {
      */
     final int mPriority;
 
-	/* 스레드 체인 관련 변수 */
+    /* 스레드 체인 관련 변수 */
     /**
      * 시간 기반 체인에서 사용. 체인된 다음 게스트를 호스트에 등록할 때 사용하는 시간 지연
      */
@@ -142,7 +143,7 @@ public abstract class ThreadGuest implements Comparable<ThreadGuest> {
      * @see #getId()
      */
     @Override
-    public int compareTo(ThreadGuest another) {
+    public int compareTo(@SuppressWarnings("NullableProblems") ThreadGuest another) {
         return compareToImpl(another);
     }
 
@@ -159,7 +160,7 @@ public abstract class ThreadGuest implements Comparable<ThreadGuest> {
     private int compareToImpl(ThreadGuest another) {
         /*
          * 결과의 정렬 방향은 {@link PriorityBlockingQueue}의 비교 연산과 관련되어 있다. 수정시 주의.
-		 * */
+         * */
         if (getPriority() == another.getPriority()) {    // 먼저 priority 비교해보자
             if (mSeqNum == another.mSeqNum)    // priority 에 차이가 없다면 seqNum 을 비교한다.
                 return 0;
@@ -218,24 +219,6 @@ public abstract class ThreadGuest implements Comparable<ThreadGuest> {
      */
     public void offerFail() {
         // do nothing
-    }
-
-    /**
-     * <font color=#FF0000>Deprecated. It will not be invoked anymore.</font><br/>
-     * <br/>
-     * Guest will not be invoked at direct time, it will be invoked when it can be.
-     * On the thread of {@link ThreadHost}.
-     * If you want to cancel task by checking timeout, you can use this guide.<br/>
-     *
-     * @param waitTimeMillis Wait time of this guest in queue.
-     * @return Whether to continue.<br/>
-     * If false, wait more and {@link #run(long)}.<br/>
-     * If true, Terminate this guest and cancel the wait.<br/>
-     * It will return false if you don't override this method.
-     */
-    @Deprecated
-    public boolean waitTimeout(long waitTimeMillis) {
-        return false;
     }
 
     /**
