@@ -234,7 +234,7 @@ public abstract class ThreadGuest implements Comparable<ThreadGuest> {
     /**
      * Invoked only if {@link #run(long)} returned non-null.<br/>
      * On the main thread. Not the thread of {@link #execute()}.
-     * So it be invoked asynchronously with other guest.<br/>
+     * So it could be invoked asynchronously with other guest.<br/>
      * <br/>
      * It will do nothing if you don't override this method.
      *
